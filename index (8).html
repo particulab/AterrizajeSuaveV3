@@ -1,0 +1,2192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aterrizaje Suave — Modo Base | EulerGames</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: rgba(12, 24, 42, 0.92);
+      --panel-2: rgba(18, 35, 58, 0.88);
+      --line: rgba(185, 215, 255, 0.18);
+      --text: #edf6ff;
+      --muted: #9fb4c8;
+      --accent: #66d9ff;
+      --accent-2: #f8c96a;
+      --good: #50f29a;
+      --bad: #ff5e6c;
+      --warning: #ffd166;
+      --shadow: rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --glow: rgba(102, 217, 255, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 8%, rgba(102, 217, 255, 0.18), transparent 30%),
+        radial-gradient(circle at 82% 15%, rgba(248, 201, 106, 0.12), transparent 24%),
+        linear-gradient(180deg, #07111f 0%, #0a1424 48%, #070b13 100%);
+      overflow-x: hidden;
+    }
+
+    body.success {
+      --glow: rgba(80, 242, 154, 0.22);
+    }
+
+    body.failure {
+      --glow: rgba(255, 94, 108, 0.22);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.38) 100%),
+        radial-gradient(circle at 50% 50%, var(--glow), transparent 62%);
+      transition: background 500ms ease;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      width: min(1480px, calc(100vw - 28px));
+      margin: 18px auto 28px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: clamp(2rem, 3.4vw, 4rem);
+      line-height: 0.94;
+      letter-spacing: -0.06em;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .brand {
+      color: rgba(237, 246, 255, 0.5);
+      font-size: 0.84rem;
+      margin-top: 4px;
+    }
+
+    .mission-status {
+      border: 1px solid var(--line);
+      background: rgba(9, 20, 35, 0.8);
+      box-shadow: 0 14px 30px var(--shadow);
+      padding: 14px 18px;
+      border-radius: 999px;
+      min-width: 260px;
+      text-align: right;
+    }
+
+    .mission-status .label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .mission-status .value {
+      margin-top: 3px;
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(290px, 0.86fr) minmax(520px, 1.55fr) minmax(300px, 0.95fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel) 0%, rgba(8, 18, 32, 0.92) 100%);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 44px var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel h2 {
+      margin: 0;
+      padding: 14px 16px 10px;
+      font-size: 0.92rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #cfe5ff;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .panel-content {
+      padding: 14px;
+    }
+
+    .data-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .data-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.055);
+    }
+
+    .data-row span:first-child {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .data-row span:last-child {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .control-card {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+
+    .control-card.active {
+      outline: 2px solid rgba(102, 217, 255, 0.5);
+      box-shadow: 0 0 22px rgba(102, 217, 255, 0.12) inset;
+    }
+
+    .control-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .control-head strong {
+      font-size: 1rem;
+    }
+
+    .control-value {
+      color: var(--accent-2);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .mini-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    button {
+      border: 0;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(95, 132, 170, 0.28), rgba(47, 70, 100, 0.36));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 850;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.22);
+      transition: transform 120ms ease, filter 120ms ease, background 120ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.42; cursor: not-allowed; transform: none; }
+
+    .primary {
+      background: linear-gradient(180deg, rgba(102, 217, 255, 0.58), rgba(31, 107, 150, 0.7));
+      border-color: rgba(170, 235, 255, 0.48);
+    }
+
+    .danger {
+      background: linear-gradient(180deg, rgba(255, 94, 108, 0.45), rgba(120, 34, 48, 0.62));
+      border-color: rgba(255, 122, 135, 0.4);
+    }
+
+    .success-btn {
+      background: linear-gradient(180deg, rgba(80, 242, 154, 0.42), rgba(31, 120, 80, 0.62));
+      border-color: rgba(118, 255, 180, 0.38);
+    }
+
+    .big-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .big-actions .primary {
+      grid-column: span 2;
+      padding: 14px;
+      font-size: 1rem;
+    }
+
+    .knob-wrap {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+    }
+
+    .knob {
+      width: 126px;
+      height: 126px;
+      border-radius: 50%;
+      position: relative;
+      margin: 0 auto;
+      cursor: ns-resize;
+      background:
+        radial-gradient(circle at 50% 50%, #1b314f 0 38%, #0d1a2e 39% 62%, #243a58 64% 67%, #0b1524 69% 100%);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.42), inset 0 0 16px rgba(102,217,255,0.18);
+      touch-action: none;
+    }
+
+    .knob::before {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: radial-gradient(circle at 42% 32%, rgba(255,255,255,0.12), transparent 38%);
+    }
+
+    .needle {
+      position: absolute;
+      width: 5px;
+      height: 46px;
+      left: 50%;
+      top: 19px;
+      transform-origin: 50% 44px;
+      transform: translateX(-50%) rotate(0deg);
+      border-radius: 999px;
+      background: var(--accent-2);
+      box-shadow: 0 0 12px rgba(248, 201, 106, 0.55);
+    }
+
+    .knob-scale {
+      display: grid;
+      width: min(170px, 100%);
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    #thrustSlider {
+      display: none;
+    }
+
+    #thrustControl .mini-buttons {
+      width: min(230px, 100%);
+      margin-top: 4px;
+    }
+
+    #thrustControl .knob {
+      cursor: default;
+    }
+
+    #thrustControl {
+      opacity: 0.96;
+    }
+
+    .hint {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(102, 217, 255, 0.07);
+      border: 1px solid rgba(102, 217, 255, 0.13);
+      color: #cfe5ff;
+      font-size: 0.86rem;
+      line-height: 1.4;
+    }
+
+    .stage-panel {
+      position: relative;
+      min-height: 700px;
+    }
+
+    .canvas-shell {
+      height: 100%;
+      min-height: 700px;
+      position: relative;
+      background: linear-gradient(180deg, rgba(8, 20, 38, 0.84), rgba(5, 9, 16, 0.96));
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 700px;
+    }
+
+    .center-column {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .graphs-panel {
+      display: none;
+    }
+
+    .graphs-panel.show {
+      display: block;
+    }
+
+    .graph-content {
+      padding: 14px;
+    }
+
+    .graph-shell {
+      position: relative;
+      min-height: 620px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(5, 12, 22, 0.86), rgba(7, 17, 31, 0.94));
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    #resultCanvas {
+      display: block;
+      width: 100%;
+      height: 620px;
+    }
+
+    .graph-placeholder {
+      margin: 10px 0 0;
+    }
+
+    .canvas-topbar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(5, 12, 22, 0.72);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.22);
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      color: #eaf7ff;
+    }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .telemetry-card {
+      min-height: 84px;
+      padding: 12px;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .telemetry-card .label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .telemetry-card .value {
+      margin-top: 6px;
+      font-size: 1.45rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .telemetry-card.wide { grid-column: span 2; }
+
+    .meter {
+      height: 12px;
+      margin-top: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .meter > div {
+      height: 100%;
+      width: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--good), var(--warning), var(--bad));
+      transform-origin: left center;
+      transition: width 120ms linear;
+    }
+
+    .feedback {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      min-height: 122px;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(255,255,255,0.07);
+      line-height: 1.42;
+    }
+
+    .feedback strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+
+    .feedback.good {
+      border-color: rgba(80, 242, 154, 0.34);
+      background: rgba(80, 242, 154, 0.08);
+    }
+
+    .feedback.bad {
+      border-color: rgba(255, 94, 108, 0.34);
+      background: rgba(255, 94, 108, 0.08);
+    }
+
+    .history {
+      margin-top: 14px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .history-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 10px;
+      border-radius: 13px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.86rem;
+    }
+
+    .history-row .tag {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      font-weight: 900;
+      background: rgba(102,217,255,0.14);
+      color: var(--accent);
+    }
+
+    .history-row.good .tag { background: rgba(80,242,154,0.16); color: var(--good); }
+    .history-row.bad .tag { background: rgba(255,94,108,0.16); color: var(--bad); }
+
+    .kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 25px;
+      padding: 2px 7px;
+      border-radius: 7px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      font-weight: 900;
+      color: #fff;
+      font-size: 0.8rem;
+    }
+
+    .result-modal {
+      position: fixed;
+      top: 88px;
+      right: 22px;
+      z-index: 10;
+      display: none;
+      width: min(520px, calc(100vw - 44px));
+      padding: 0;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    .result-modal.show { display: block; }
+
+    .modal-card {
+      width: 100%;
+      border-radius: 24px;
+      padding: 22px;
+      background: linear-gradient(180deg, rgba(13, 28, 48, 0.96), rgba(6, 13, 24, 0.96));
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.42);
+      pointer-events: auto;
+    }
+
+    .modal-card h3 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+      letter-spacing: -0.04em;
+    }
+
+    .modal-card p {
+      margin: 0 0 14px;
+      color: #cfe0f2;
+      line-height: 1.45;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 1180px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .stage-panel, .canvas-shell { min-height: 620px; }
+      #gameCanvas { height: 620px; }
+      #resultCanvas { height: 620px; }
+      header { grid-template-columns: 1fr; }
+      .mission-status { text-align: left; border-radius: 18px; }
+    }
+
+    @media (max-width: 620px) {
+      .app { width: min(100% - 16px, 1480px); margin-top: 10px; }
+      .telemetry-grid { grid-template-columns: 1fr; }
+      .telemetry-card.wide { grid-column: span 1; }
+      .big-actions { grid-template-columns: 1fr; }
+      .big-actions .primary { grid-column: span 1; }
+      .knob-wrap { grid-template-columns: 1fr; }
+      .result-modal { top: 12px; right: 12px; width: calc(100vw - 24px); }
+      .modal-actions { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>Aterrizaje Suave</h1>
+        <div class="subtitle">Modo base: elige la altura de encendido con un motor de potencia fija.</div>
+        <div class="brand">Un minijuego de EulerGames</div>
+      </div>
+      <div class="mission-status">
+        <div class="label">Estado de misión</div>
+        <div class="value" id="missionState">Preparando descenso</div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <h2>Datos de misión</h2>
+        <div class="panel-content">
+          <div class="data-grid" id="missionData"></div>
+
+          <div class="control-card active" id="heightControl" data-control="height">
+            <div class="control-head">
+              <strong>Altura de encendido</strong>
+              <span class="control-value" id="ignitionReadout">-- m</span>
+            </div>
+            <input type="range" id="ignitionSlider" min="5" max="200" step="1" value="70" />
+            <div class="mini-buttons">
+              <button id="heightMinusBig">−5</button>
+              <button id="heightMinusSmall">−1</button>
+              <button id="heightPlusSmall">+1</button>
+              <button id="heightPlusBig">+5</button>
+            </div>
+          </div>
+
+          <div class="control-card" id="thrustControl" data-control="thrust">
+            <div class="control-head">
+              <strong>Motor calibrado</strong>
+              <span class="control-value" id="thrustReadout">--%</span>
+            </div>
+            <div class="knob-wrap">
+              <div class="knob" id="thrustKnob" aria-label="Indicador de potencia fija" role="img" tabindex="-1">
+                <div class="needle" id="knobNeedle"></div>
+              </div>
+              <div class="knob-scale" style="grid-template-columns: 1fr 1fr; margin-top: 0;">
+                <span>30%</span><span style="text-align:right;">100%</span>
+              </div>
+              <input type="range" id="thrustSlider" min="30" max="100" step="1" value="70" />
+              <div class="hint" style="margin-top: 0; text-align: center;">El motor trabajará al porcentaje indicado del empuje máximo. El reto es decidir cuándo iniciar el frenado.</div>
+              <div class="mini-buttons" style="display:none;">
+                <button id="thrustMinusBig">−5</button>
+                <button id="thrustMinusSmall">−1</button>
+                <button id="thrustPlusSmall">+1</button>
+                <button id="thrustPlusBig">+5</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="big-actions">
+            <button class="primary" id="startBtn">Probar descenso</button>
+            <button id="newBtn">Nueva misión</button>
+            <button id="soundBtn">Sonido: apagado</button>
+          </div>
+
+          <div class="hint">
+            Ajusta la altura de encendido. Usa <span class="kbd">←</span>/<span class="kbd">→</span> para ajuste grueso y <span class="kbd">↑</span>/<span class="kbd">↓</span> para ajuste fino. La altura se mide desde la base del cohete y la simulación corre en tiempo físico real.
+          </div>
+        </div>
+      </section>
+
+      <div class="center-column">
+        <section class="panel stage-panel">
+          <div class="canvas-shell">
+            <canvas id="gameCanvas" width="900" height="700"></canvas>
+            <div class="canvas-topbar">
+              <div class="pill" id="timePill">t = 0.0 s</div>
+              <div class="pill" id="worldPill">Mundo: --</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel graphs-panel" id="graphsPanel">
+          <h2>Evidencia del descenso</h2>
+          <div class="graph-content">
+            <div class="graph-shell">
+              <canvas id="resultCanvas" width="900" height="620"></canvas>
+            </div>
+            <div class="hint graph-placeholder" id="graphPlaceholder">
+              Las gráficas aparecerán aquí después del intento para revisar altura y velocidad con más claridad.
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <h2>Telemetría</h2>
+        <div class="panel-content">
+          <div class="telemetry-grid">
+            <div class="telemetry-card">
+              <div class="label">Altura base</div>
+              <div class="value" id="heightNow">-- m</div>
+            </div>
+            <div class="telemetry-card">
+              <div class="label">Velocidad</div>
+              <div class="value" id="velocityNow">-- m/s</div>
+            </div>
+            <div class="telemetry-card wide">
+              <div class="label">Combustible</div>
+              <div class="value" id="fuelNow">--%</div>
+              <div class="meter"><div id="fuelBar"></div></div>
+            </div>
+            <div class="telemetry-card wide">
+              <div class="label">Motor</div>
+              <div class="value" id="engineNow">Apagado</div>
+            </div>
+          </div>
+
+          <div class="feedback" id="feedbackBox">
+            <strong>Antes del intento</strong>
+            Ajusta la altura de encendido. La retroalimentación física aparecerá después de probar.
+          </div>
+
+          <h2 style="margin: 14px -14px 0; border-top: 1px solid var(--line);">Criterio</h2>
+          <div class="hint" style="margin:14px 0 0;">
+            Esta misión permite un solo intento. El aterrizaje es exitoso si la velocidad final no supera el límite seguro. Al terminar, revisa la evidencia del descenso y avanza a una nueva misión.
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="result-modal" id="resultModal">
+    <div class="modal-card">
+      <h3 id="modalTitle">Resultado</h3>
+      <p id="modalText">Texto de resultado.</p>
+      <div class="modal-actions">
+        <button class="success-btn" id="modalNew">Nueva misión</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const resultCanvas = document.getElementById('resultCanvas');
+    const resultCtx = resultCanvas.getContext('2d');
+
+    const els = {
+      missionState: document.getElementById('missionState'),
+      missionData: document.getElementById('missionData'),
+      ignitionReadout: document.getElementById('ignitionReadout'),
+      thrustReadout: document.getElementById('thrustReadout'),
+      ignitionSlider: document.getElementById('ignitionSlider'),
+      thrustSlider: document.getElementById('thrustSlider'),
+      knobNeedle: document.getElementById('knobNeedle'),
+      thrustKnob: document.getElementById('thrustKnob'),
+      heightControl: document.getElementById('heightControl'),
+      thrustControl: document.getElementById('thrustControl'),
+      startBtn: document.getElementById('startBtn'),
+      newBtn: document.getElementById('newBtn'),
+      soundBtn: document.getElementById('soundBtn'),
+      timePill: document.getElementById('timePill'),
+      worldPill: document.getElementById('worldPill'),
+      graphsPanel: document.getElementById('graphsPanel'),
+      graphPlaceholder: document.getElementById('graphPlaceholder'),
+      heightNow: document.getElementById('heightNow'),
+      velocityNow: document.getElementById('velocityNow'),
+      fuelNow: document.getElementById('fuelNow'),
+      fuelBar: document.getElementById('fuelBar'),
+      engineNow: document.getElementById('engineNow'),
+      feedbackBox: document.getElementById('feedbackBox'),
+      resultModal: document.getElementById('resultModal'),
+      modalTitle: document.getElementById('modalTitle'),
+      modalText: document.getElementById('modalText'),
+      modalNew: document.getElementById('modalNew')
+    };
+
+    const buttons = {
+      heightMinusBig: document.getElementById('heightMinusBig'),
+      heightMinusSmall: document.getElementById('heightMinusSmall'),
+      heightPlusSmall: document.getElementById('heightPlusSmall'),
+      heightPlusBig: document.getElementById('heightPlusBig'),
+      thrustMinusBig: document.getElementById('thrustMinusBig'),
+      thrustMinusSmall: document.getElementById('thrustMinusSmall'),
+      thrustPlusSmall: document.getElementById('thrustPlusSmall'),
+      thrustPlusBig: document.getElementById('thrustPlusBig')
+    };
+
+    const worlds = [
+      'Selene', 'Asterión', 'Nix', 'Bruma', 'Cobalto', 'Helia', 'Dione', 'Vesta', 'Erebo', 'Ícaro'
+    ];
+
+    // La variable de altura representa la distancia desde la base del cohete hasta la plataforma.
+    const CAPSULE_BASE_OFFSET = 50;
+
+    const state = {
+      round: null,
+      activeControl: 'height',
+      ignitionHeight: 70,
+      thrustPct: 70,
+      running: false,
+      ended: false,
+      sim: null,
+      lastFrame: 0,
+      attempt: 0,
+      soundEnabled: false,
+      audio: null,
+      motorOsc: null,
+      motorGain: null,
+      particles: []
+    };
+
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function randi(min, max) {
+      return Math.floor(rand(min, max + 1));
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function roundTo(value, step) {
+      return Math.round(value / step) * step;
+    }
+
+    function format(value, digits = 1) {
+      return Number(value).toFixed(digits);
+    }
+
+    function generateRound() {
+      for (let tries = 0; tries < 7000; tries++) {
+        const H0 = rand(110, 210);
+        const v0 = rand(4.5, 11.0);
+        const g = rand(0.7, 1.5);
+        const mass = rand(360, 860);
+        const safeV = rand(2.2, 3.0);
+        const fixedPct = roundTo(rand(56, 74), 1);
+        const pct = fixedPct / 100;
+        const motorAccel = rand(g + 0.7, g + 1.7);
+        const thrustMax = motorAccel * mass / pct;
+        const fuelFull = rand(4.8, 8.4);
+
+        const candidate = {
+          world: worlds[randi(0, worlds.length - 1)],
+          H0: roundTo(H0, 1),
+          v0: roundTo(v0, 0.1),
+          g: roundTo(g, 0.01),
+          mass: roundTo(mass, 1),
+          safeV: roundTo(safeV, 0.1),
+          thrustMax: roundTo(thrustMax, 50),
+          fixedThrustPct: fixedPct,
+          fuelFull: roundTo(fuelFull, 0.1),
+          hidden: {
+            pct,
+            motorAccel
+          }
+        };
+
+        const validation = validateRound(candidate);
+        if (validation.ok) {
+          candidate.hidden.validation = validation;
+          candidate.hidden.best = validation.best;
+          return candidate;
+        }
+      }
+
+      const fallback = {
+        world: 'Selene', H0: 191, v0: 9.9, g: 0.74, mass: 475,
+        safeV: 2.7, thrustMax: 1550, fixedThrustPct: 59, fuelFull: 7.7,
+        hidden: { pct: 0.59 }
+      };
+      const validation = validateRound(fallback, true);
+      fallback.hidden.validation = validation;
+      fallback.hidden.best = validation.best || { ignition: 98, finalV: 2.0, fuelPct: 14 };
+      return fallback;
+    }
+
+    function simulateStrategy(r, ignitionHeight, thrustPct = r.fixedThrustPct, dt = 0.018) {
+      const pct = clamp(thrustPct / 100, 0, 1);
+      const s = {
+        time: 0,
+        height: r.H0,
+        velocity: r.v0,
+        fuel: r.fuelFull,
+        engineTriggered: false,
+        engineOn: false,
+        ignitionActualTime: null,
+        maxHeightAfterTrigger: r.H0
+      };
+
+      for (let i = 0; i < Math.ceil(65 / dt); i++) {
+        if (!s.engineTriggered && s.height <= ignitionHeight) {
+          s.engineTriggered = true;
+          s.ignitionActualTime = s.time;
+        }
+
+        s.engineOn = s.engineTriggered && s.fuel > 0 && pct > 0;
+        const motorAccel = s.engineOn ? (r.thrustMax * pct) / r.mass : 0;
+        if (s.engineOn) s.fuel = Math.max(0, s.fuel - pct * dt);
+
+        const accelerationDown = r.g - motorAccel;
+        s.velocity += accelerationDown * dt;
+        s.height -= s.velocity * dt;
+        s.time += dt;
+
+        if (s.engineTriggered) {
+          s.maxHeightAfterTrigger = Math.max(s.maxHeightAfterTrigger, s.height);
+        }
+
+        if (s.height <= 0 && s.velocity >= -0.2) {
+          const finalV = Math.max(0, s.velocity);
+          const fuelPct = 100 * s.fuel / r.fuelFull;
+          return {
+            landed: true,
+            success: finalV <= r.safeV,
+            type: finalV <= r.safeV ? 'safe' : (s.fuel <= 0.001 && s.engineTriggered ? 'fuel' : 'crash'),
+            finalV,
+            fuelPct,
+            time: s.time,
+            engineTriggered: s.engineTriggered,
+            ignitionActualTime: s.ignitionActualTime,
+            maxHeightAfterTrigger: s.maxHeightAfterTrigger
+          };
+        }
+
+        if (s.engineTriggered && s.height > r.H0 + 50 && s.velocity < -2) {
+          return {
+            landed: false,
+            success: false,
+            type: 'bounce',
+            finalV: 0,
+            fuelPct: 100 * s.fuel / r.fuelFull,
+            time: s.time,
+            engineTriggered: true,
+            ignitionActualTime: s.ignitionActualTime,
+            maxHeightAfterTrigger: s.maxHeightAfterTrigger
+          };
+        }
+      }
+
+      return {
+        landed: false,
+        success: false,
+        type: 'timeout',
+        finalV: Math.max(0, s.velocity),
+        fuelPct: 100 * s.fuel / r.fuelFull,
+        time: s.time,
+        engineTriggered: s.engineTriggered,
+        ignitionActualTime: s.ignitionActualTime,
+        maxHeightAfterTrigger: s.maxHeightAfterTrigger
+      };
+    }
+
+    function validateRound(r, allowFallback = false) {
+      const ignitionMin = Math.max(5, Math.round(r.H0 * 0.08));
+      const ignitionMax = Math.round(r.H0 * 0.94);
+      const heights = [];
+      for (let h = ignitionMin; h <= ignitionMax; h += 1) heights.push(h);
+
+      const successes = [];
+      const failuresBelow = [];
+      const failuresAbove = [];
+      const failureCounts = {};
+
+      for (const h of heights) {
+        const out = simulateStrategy(r, h, r.fixedThrustPct);
+        if (out.success) {
+          successes.push({ ignition: h, ...out });
+        } else {
+          failureCounts[out.type] = (failureCounts[out.type] || 0) + 1;
+        }
+      }
+
+      if (successes.length) {
+        const firstSuccess = Math.min(...successes.map(x => x.ignition));
+        const lastSuccess = Math.max(...successes.map(x => x.ignition));
+        for (const h of heights) {
+          const out = simulateStrategy(r, h, r.fixedThrustPct);
+          if (!out.success && h < firstSuccess) failuresBelow.push(h);
+          if (!out.success && h > lastSuccess) failuresAbove.push(h);
+        }
+      }
+
+      successes.sort((a, b) => {
+        const scoreA = Math.abs(a.finalV - r.safeV * 0.62) + Math.abs(a.fuelPct - 38) / 45;
+        const scoreB = Math.abs(b.finalV - r.safeV * 0.62) + Math.abs(b.fuelPct - 38) / 45;
+        return scoreA - scoreB;
+      });
+
+      const range = successes.length ? {
+        ignitionMin: Math.min(...successes.map(x => x.ignition)),
+        ignitionMax: Math.max(...successes.map(x => x.ignition))
+      } : null;
+
+      const total = heights.length;
+      const successRatio = successes.length / Math.max(1, total);
+      const windowWidth = range ? (range.ignitionMax - range.ignitionMin) : 0;
+      const minWidth = Math.max(3, r.H0 * 0.018);
+      const maxWidth = Math.max(24, r.H0 * 0.24);
+      const hasEnoughWindow = windowWidth >= minWidth;
+      const notTooWide = windowWidth <= maxWidth && successRatio <= 0.30;
+      const hasFailureOnBothSides = allowFallback || (failuresBelow.length >= 5 && failuresAbove.length >= 5);
+      const usefulFuel = successes.length ? successes.some(x => x.fuelPct <= 90) : false;
+      const hasLateFailure = (failureCounts.crash || 0) + (failureCounts.fuel || 0) > 0;
+
+      const ok = allowFallback || (
+        successes.length >= 4 &&
+        hasEnoughWindow &&
+        notTooWide &&
+        hasFailureOnBothSides &&
+        usefulFuel &&
+        hasLateFailure
+      );
+
+      return {
+        ok,
+        successCount: successes.length,
+        totalTested: total,
+        successRatio,
+        windowWidth,
+        best: successes[0] || null,
+        range,
+        failureCounts
+      };
+    }
+
+    function pickInitialControls(r) {
+      const ignitionMin = Math.max(5, Math.round(r.H0 * 0.08));
+      const ignitionMax = Math.round(r.H0 * 0.94);
+      const range = r.hidden?.validation?.range;
+
+      for (let tries = 0; tries < 160; tries++) {
+        const ignition = Math.round(rand(r.H0 * 0.20, r.H0 * 0.70));
+        const outcome = simulateStrategy(r, ignition, r.fixedThrustPct);
+        const farFromWindow = !range || ignition < range.ignitionMin - 4 || ignition > range.ignitionMax + 4;
+        if (!outcome.success && farFromWindow) return { ignition };
+      }
+
+      if (range && range.ignitionMin - ignitionMin > ignitionMax - range.ignitionMax) {
+        return { ignition: Math.max(ignitionMin, range.ignitionMin - 12) };
+      }
+      if (range) return { ignition: Math.min(ignitionMax, range.ignitionMax + 12) };
+      return { ignition: Math.round(rand(r.H0 * 0.22, r.H0 * 0.45)) };
+    }
+
+    function newMission() {
+      state.round = generateRound();
+      state.attempt = 0;
+      state.running = false;
+      state.ended = false;
+      state.particles = [];
+
+      const r = state.round;
+      els.ignitionSlider.min = Math.max(5, Math.round(r.H0 * 0.08));
+      els.ignitionSlider.max = Math.round(r.H0 * 0.94);
+
+      // El modo base sólo deja libre la altura de encendido; la potencia es fija por misión.
+      const initialControls = pickInitialControls(r);
+      state.ignitionHeight = initialControls.ignition;
+      state.thrustPct = r.fixedThrustPct;
+      state.activeControl = 'height';
+
+      updateControls();
+      resetSim();
+      setControlsEnabled(true);
+      renderMissionData();
+      setMissionState('Preparando descenso');
+      setFeedback('Antes del intento', 'Modo base: ajusta sólo la altura de encendido. Tendrás un solo intento; la retroalimentación física aparecerá después de probar.', '');
+      document.body.classList.remove('success', 'failure');
+      hideModal();
+      hideGraphPanel();
+      draw();
+    }
+
+    function resetSim() {
+      stopMotorSound();
+      state.running = false;
+      state.ended = false;
+      state.sim = {
+        time: 0,
+        height: state.round.H0,
+        velocity: state.round.v0,
+        fuel: state.round.fuelFull,
+        engineTriggered: false,
+        engineOn: false,
+        touchdown: false,
+        result: null,
+        path: [],
+        velocityPath: [],
+        maxHeightAfterTrigger: state.round.H0,
+        ignitionActualTime: null
+      };
+      setMissionState('Preparando descenso');
+      updateTelemetry();
+      hideModal();
+      hideGraphPanel();
+      draw();
+    }
+
+    function renderMissionData() {
+      const r = state.round;
+      const rows = [
+        ['Modo', 'Base · Nivel 3'],
+        ['Mundo', r.world],
+        ['Altura inicial', `${format(r.H0, 0)} m`],
+        ['Velocidad inicial', `${format(r.v0, 1)} m/s ↓`],
+        ['Gravedad', `${format(r.g, 2)} m/s²`],
+        ['Masa de cápsula', `${format(r.mass, 0)} kg`],
+        ['Potencia fija', `${format(r.fixedThrustPct, 0)}%`],
+        ['Empuje máximo', `${format(r.thrustMax, 0)} N`],
+        ['Combustible', `${format(r.fuelFull, 1)} s al 100%`],
+        ['Velocidad segura', `≤ ${format(r.safeV, 1)} m/s`]
+      ];
+
+      els.missionData.innerHTML = rows.map(([a, b]) => `
+        <div class="data-row"><span>${a}</span><span>${b}</span></div>
+      `).join('');
+      els.worldPill.textContent = `Mundo: ${r.world}`;
+    }
+
+    function setMissionState(text) {
+      els.missionState.textContent = text;
+    }
+
+    function setFeedback(title, body, tone) {
+      els.feedbackBox.className = 'feedback' + (tone ? ` ${tone}` : '');
+      els.feedbackBox.innerHTML = `<strong>${title}</strong>${body}`;
+    }
+
+    function updateControls() {
+      const r = state.round;
+      state.ignitionHeight = clamp(state.ignitionHeight, Number(els.ignitionSlider.min), Number(els.ignitionSlider.max));
+      state.thrustPct = r.fixedThrustPct;
+
+      els.ignitionSlider.value = state.ignitionHeight;
+      els.thrustSlider.value = state.thrustPct;
+      els.ignitionReadout.textContent = `${format(state.ignitionHeight, 0)} m`;
+      els.thrustReadout.textContent = `${format(state.thrustPct, 0)}% fijo`;
+
+      const minThrust = Number(els.thrustSlider.min);
+      const maxThrust = Number(els.thrustSlider.max);
+      const thrustRatio = (state.thrustPct - minThrust) / (maxThrust - minThrust);
+      const angle = -135 + clamp(thrustRatio, 0, 1) * 270;
+      els.knobNeedle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+
+      els.heightControl.classList.toggle('active', true);
+      els.thrustControl.classList.toggle('active', false);
+
+      if (state.sim && !state.running) draw();
+    }
+
+    function setActiveControl(name) {
+      state.activeControl = 'height';
+      updateControls();
+    }
+
+    function adjustControl(name, delta) {
+      if (state.running || state.ended) return;
+      state.ignitionHeight += delta;
+      updateControls();
+    }
+
+    function setControlsEnabled(enabled) {
+      const all = [
+        els.ignitionSlider,
+        buttons.heightMinusBig, buttons.heightMinusSmall, buttons.heightPlusSmall, buttons.heightPlusBig,
+        els.startBtn, els.newBtn
+      ];
+      all.forEach(el => el.disabled = !enabled);
+      els.newBtn.disabled = false;
+      els.soundBtn.disabled = false;
+    }
+
+    function startAttempt() {
+      if (state.running || state.ended) return;
+      resetSim();
+      state.running = true;
+      state.ended = false;
+      state.lastFrame = performance.now();
+      state.attempt += 1;
+      setControlsEnabled(false);
+      setMissionState('Descenso en curso');
+      setFeedback('Intento en curso', 'La cápsula ejecutará la altura de encendido programada con el motor de potencia fija.', '');
+      document.body.classList.remove('success', 'failure');
+      beep(520, 0.07, 0.05);
+      requestAnimationFrame(loop);
+    }
+
+    function loop(now) {
+      if (!state.running) return;
+      const dtRaw = (now - state.lastFrame) / 1000;
+      const dt = Math.min(dtRaw, 0.035);
+      state.lastFrame = now;
+
+      stepPhysics(dt);
+      updateTelemetry();
+      draw();
+
+      if (state.running) requestAnimationFrame(loop);
+    }
+
+    function stepPhysics(dt) {
+      const r = state.round;
+      const s = state.sim;
+      const pct = state.thrustPct / 100;
+
+      if (!s.engineTriggered && s.height <= state.ignitionHeight) {
+        s.engineTriggered = true;
+        s.ignitionActualTime = s.time;
+        spawnSpark(s.height, 28);
+        beep(260, 0.08, 0.035);
+      }
+
+      s.engineOn = s.engineTriggered && s.fuel > 0 && pct > 0;
+      let motorAccel = 0;
+      if (s.engineOn) {
+        motorAccel = (r.thrustMax * pct) / r.mass;
+        s.fuel = Math.max(0, s.fuel - pct * dt);
+        startMotorSound(pct);
+        if (Math.random() < 0.7) spawnFlameParticle();
+      } else {
+        stopMotorSound();
+      }
+
+      const accelerationDown = r.g - motorAccel;
+      s.velocity += accelerationDown * dt;
+      s.height -= s.velocity * dt;
+      s.time += dt;
+
+      if (s.engineTriggered) {
+        s.maxHeightAfterTrigger = Math.max(s.maxHeightAfterTrigger, s.height);
+      }
+
+      s.path.push({ t: s.time, h: s.height });
+      s.velocityPath.push({ t: s.time, v: s.velocity });
+      if (s.path.length > 900) s.path.shift();
+      if (s.velocityPath.length > 900) s.velocityPath.shift();
+
+      updateParticles(dt);
+
+      if (s.height <= 0 && s.velocity >= -0.2) {
+        s.height = 0;
+        finishAttempt(evaluateLanding());
+        return;
+      }
+
+      if (s.time > 65) {
+        finishAttempt({
+          success: false,
+          title: 'Misión inconclusa',
+          reason: 'La cápsula no logró aterrizar dentro del tiempo de seguridad.',
+          type: 'timeout'
+        });
+        return;
+      }
+
+      if (s.engineTriggered && s.height > r.H0 + 55 && s.velocity < -2) {
+        finishAttempt({
+          success: false,
+          title: 'Rebote excesivo',
+          reason: 'El motor se encendió demasiado pronto y la cápsula volvió a subir.',
+          type: 'bounce',
+          finalV: 0,
+          fuelPct: 100 * s.fuel / r.fuelFull,
+          diagnosis: 'El motor actuó durante demasiado tiempo; el descenso se convirtió en ascenso.'
+        });
+      }
+    }
+
+    function evaluateLanding() {
+      const r = state.round;
+      const s = state.sim;
+      const finalV = Math.max(0, s.velocity);
+      const safe = finalV <= r.safeV;
+      const fuelPct = 100 * s.fuel / r.fuelFull;
+
+      if (safe) {
+        const quality = finalV < r.safeV * 0.55 ? 'muy suave' : 'seguro';
+        return {
+          success: true,
+          title: 'Aterrizaje exitoso',
+          reason: `La cápsula tocó la plataforma con un descenso ${quality}.`,
+          type: 'safe',
+          finalV,
+          fuelPct,
+          diagnosis: 'La altura elegida dejó suficiente distancia de frenado sin exceder la velocidad segura.'
+        };
+      }
+
+      const diagnosis = diagnoseAttempt(finalV, fuelPct);
+
+      return {
+        success: false,
+        title: diagnosis.title,
+        reason: diagnosis.reason,
+        type: diagnosis.type,
+        finalV,
+        fuelPct,
+        diagnosis: diagnosis.explanation
+      };
+    }
+
+    function diagnoseAttempt(finalV, fuelPct) {
+      const r = state.round;
+      const s = state.sim;
+      const range = r.hidden?.validation?.range;
+      const ignition = state.ignitionHeight;
+
+      if (!s.engineTriggered) {
+        return {
+          title: 'Impacto destructivo',
+          type: 'late',
+          reason: 'El motor no alcanzó a intervenir antes del contacto.',
+          explanation: 'La altura de encendido quedó demasiado baja para la velocidad acumulada durante la caída libre.'
+        };
+      }
+
+      if (s.fuel <= 0.001) {
+        return {
+          title: 'Combustible agotado',
+          type: 'fuel',
+          reason: 'El motor consumió el combustible disponible antes de completar el frenado.',
+          explanation: 'En este modo la potencia es fija; el ajuste posible era encender más tarde para reducir el tiempo de motor, sin perder demasiada distancia de frenado.'
+        };
+      }
+
+      if (range) {
+        if (ignition < range.ignitionMin - 3) {
+          return {
+            title: 'Encendido tardío',
+            type: 'late',
+            reason: 'La cápsula llegó demasiado rápido porque hubo poca distancia de frenado.',
+            explanation: 'Aunque el motor produjo empuje, se activó cuando la velocidad descendente ya era demasiado alta.'
+          };
+        }
+
+        if (ignition > range.ignitionMax + 3) {
+          return {
+            title: 'Encendido temprano',
+            type: 'early',
+            reason: 'El motor trabajó durante demasiado tiempo antes del contacto.',
+            explanation: 'Encender antes no siempre ayuda: puede agotar combustible, provocar rebote o hacer poco eficiente el descenso.'
+          };
+        }
+      }
+
+      return {
+        title: 'Impacto destructivo',
+        type: 'crash',
+        reason: 'La cápsula llegó demasiado rápido a la plataforma.',
+        explanation: 'La altura elegida no redujo la velocidad por debajo del límite seguro.'
+      };
+    }
+
+    function finishAttempt(result) {
+      state.running = false;
+      state.ended = true;
+      state.sim.result = result;
+      stopMotorSound();
+      setControlsEnabled(false);
+      updateTelemetry();
+      draw();
+      showGraphPanel();
+      drawResultGraphs();
+
+      const finalV = result.finalV ?? Math.max(0, state.sim.velocity);
+      const fuelPct = result.fuelPct ?? (100 * state.sim.fuel / state.round.fuelFull);
+
+      document.body.classList.toggle('success', result.success);
+      document.body.classList.toggle('failure', !result.success);
+
+      const tone = result.success ? 'good' : 'bad';
+      const title = result.title;
+      const body = buildFeedback(result, finalV, fuelPct);
+      setMissionState(result.success ? 'Aterrizaje seguro' : 'Misión fallida');
+      setFeedback(title, body, tone);
+
+      if (result.success) {
+        beep(740, 0.08, 0.06);
+        setTimeout(() => beep(980, 0.12, 0.05), 100);
+      } else {
+        impactSound(finalV, result.type);
+        spawnDust(70);
+      }
+
+    }
+
+    function buildFeedback(result, finalV, fuelPct) {
+      const r = state.round;
+      const s = state.sim;
+      const effectiveThrust = r.thrustMax * (r.fixedThrustPct / 100);
+      const facts = `Velocidad final: <b>${format(finalV, 2)} m/s</b>. Límite seguro: <b>${format(r.safeV, 1)} m/s</b>. Combustible restante: <b>${format(Math.max(0, fuelPct), 0)}%</b>. Empuje efectivo usado: <b>${format(effectiveThrust, 0)} N</b>.`;
+      const engineData = s.ignitionActualTime !== null
+        ? `El motor se activó en <b>t = ${format(s.ignitionActualTime, 1)} s</b>.`
+        : 'El motor no llegó a activarse.';
+      const attemptData = `Intento: <b>${format(state.ignitionHeight, 0)} m</b>. Potencia fija: <b>${format(state.thrustPct, 0)}%</b> del empuje máximo.`;
+
+      if (result.success) {
+        return `${result.reason}<br>${facts}<br>${engineData}<br>${attemptData}`;
+      }
+
+      const reference = buildReferenceHint();
+      const explanation = result.diagnosis ? `<br>${result.diagnosis}` : '';
+
+      if (result.type === 'bounce') {
+        return `${result.reason}<br>${engineData}<br>${attemptData}<br>La estrategia necesitaba encender más tarde para reducir el tiempo de motor.${reference}`;
+      }
+      if (result.type === 'fuel') {
+        return `${result.reason}<br>${facts}<br>${engineData}<br>${attemptData}${explanation}${reference}`;
+      }
+      if (result.type === 'late') {
+        return `${result.reason}<br>${facts}<br>${engineData}<br>${attemptData}${explanation}${reference}`;
+      }
+      if (result.type === 'weak') {
+        return `${result.reason}<br>${facts}<br>${engineData}<br>${attemptData}${explanation}${reference}`;
+      }
+      if (result.type === 'strong' || result.type === 'early') {
+        return `${result.reason}<br>${facts}<br>${engineData}<br>${attemptData}${explanation}${reference}`;
+      }
+      if (result.type === 'timeout') {
+        return `${result.reason}<br>Puede ocurrir cuando la cápsula rebota o queda con una estrategia poco eficiente.${reference}`;
+      }
+      return `${result.reason}<br>${facts}<br>${engineData}<br>${attemptData}${explanation}${reference}`;
+    }
+
+    function buildReferenceHint() {
+      const range = state.round.hidden?.validation?.range;
+      if (!range) return '';
+      return `<br>Zona aproximada encontrada por validación interna: <b>${format(range.ignitionMin, 0)}–${format(range.ignitionMax, 0)} m</b>.`;
+    }
+
+    function stripTags(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html.replaceAll('<br>', '\n');
+      return div.textContent || div.innerText || '';
+    }
+
+    function showModal(title, text) {
+      els.modalTitle.textContent = title;
+      els.modalText.textContent = text;
+      els.resultModal.classList.add('show');
+    }
+
+    function hideModal() {
+      els.resultModal.classList.remove('show');
+    }
+
+    function showGraphPanel() {
+      els.graphsPanel.classList.add('show');
+      els.graphPlaceholder.textContent = 'Estas gráficas muestran la evidencia del intento: altura y velocidad durante el descenso.';
+    }
+
+    function hideGraphPanel() {
+      els.graphsPanel.classList.remove('show');
+      resultCtx.clearRect(0, 0, resultCanvas.width, resultCanvas.height);
+    }
+
+    function updateTelemetry() {
+      const s = state.sim;
+      const r = state.round;
+      if (!s) return;
+
+      const vText = s.velocity >= 0 ? `${format(s.velocity, 1)} ↓` : `${format(Math.abs(s.velocity), 1)} ↑`;
+      els.heightNow.textContent = `${format(Math.max(0, s.height), 1)} m`;
+      els.velocityNow.textContent = `${vText} m/s`;
+      const fuelPct = clamp(100 * s.fuel / r.fuelFull, 0, 100);
+      els.fuelNow.textContent = `${format(fuelPct, 0)}%`;
+      els.fuelBar.style.width = `${fuelPct}%`;
+      els.engineNow.textContent = s.engineOn ? 'Encendido' : (s.engineTriggered && s.fuel <= 0 ? 'Sin combustible' : 'Apagado');
+      els.timePill.textContent = `t = ${format(s.time, 1)} s`;
+    }
+
+    function draw() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const r = state.round;
+      const s = state.sim;
+      if (!r || !s) return;
+
+      ctx.clearRect(0, 0, w, h);
+      drawSky(w, h);
+
+      const groundY = h - 78;
+      const topY = 72;
+      const scale = (groundY - topY) / (r.H0 * 1.1);
+      const toY = height => groundY - height * scale;
+      const centerX = w * 0.53;
+
+      drawHeightScale(w, h, topY, groundY, scale, r.H0);
+      drawIgnitionLine(toY(state.ignitionHeight), centerX, w);
+      drawTrajectoryTrace(s, toY, centerX);
+      drawPlatform(centerX, groundY, w);
+      const capsuleBaseY = toY(s.height);
+      drawCapsule(centerX, capsuleBaseY - CAPSULE_BASE_OFFSET, s);
+      drawBaseReference(centerX, capsuleBaseY);
+      drawParticles(toY, centerX);
+
+    }
+
+    function drawSky(w, h) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, h);
+      gradient.addColorStop(0, '#091b33');
+      gradient.addColorStop(0.55, '#07111f');
+      gradient.addColorStop(1, '#050812');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.globalAlpha = 0.62;
+      for (let i = 0; i < 80; i++) {
+        const x = pseudoRandom(i * 19.13) * w;
+        const y = pseudoRandom(i * 7.77) * h * 0.75;
+        const radius = 0.6 + pseudoRandom(i * 3.91) * 1.5;
+        ctx.fillStyle = 'rgba(220, 240, 255, 0.75)';
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Horizonte rocoso
+      ctx.fillStyle = '#10131b';
+      ctx.beginPath();
+      ctx.moveTo(0, h - 70);
+      for (let x = 0; x <= w; x += 45) {
+        const y = h - 76 + Math.sin(x * 0.018) * 8 + Math.cos(x * 0.041) * 5;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#171b24';
+      ctx.fillRect(0, h - 58, w, 58);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      for (let x = -20; x < w + 40; x += 50) {
+        ctx.beginPath();
+        ctx.ellipse(x, h - 35 + Math.sin(x) * 3, 32, 7, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    function pseudoRandom(seed) {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    }
+
+    function drawHeightScale(w, h, topY, groundY, scale, maxHeight) {
+      const x = 78;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(207,229,255,0.24)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, topY);
+      ctx.lineTo(x, groundY);
+      ctx.stroke();
+
+      const step = chooseTickStep(maxHeight);
+      ctx.font = '700 13px system-ui';
+      ctx.fillStyle = 'rgba(237,246,255,0.72)';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+
+      for (let m = 0; m <= maxHeight + 0.1; m += step) {
+        const y = groundY - m * scale;
+        ctx.strokeStyle = m === 0 ? 'rgba(255,255,255,0.34)' : 'rgba(255,255,255,0.16)';
+        ctx.lineWidth = m === 0 ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y);
+        ctx.lineTo(x + 10, y);
+        ctx.stroke();
+        if (m > 0) ctx.fillText(`${m} m`, x - 14, y);
+      }
+      ctx.restore();
+    }
+
+    function chooseTickStep(maxHeight) {
+      if (maxHeight > 210) return 40;
+      if (maxHeight > 150) return 30;
+      return 20;
+    }
+
+    function drawIgnitionLine(y, centerX, w) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(248, 201, 106, 0.86)';
+      ctx.setLineDash([10, 8]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(118, y);
+      ctx.lineTo(w - 84, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(248, 201, 106, 0.14)';
+      ctx.fillRect(118, y - 2, w - 202, 4);
+
+      ctx.fillStyle = 'rgba(8, 15, 26, 0.78)';
+      roundRect(ctx, w - 245, y - 18, 165, 34, 999);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(248, 201, 106, 0.5)';
+      ctx.stroke();
+      ctx.fillStyle = '#ffe5a3';
+      ctx.font = '850 14px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`Motor: ${format(state.ignitionHeight, 0)} m`, w - 162, y);
+      ctx.restore();
+    }
+
+    function drawPlatform(centerX, groundY, w) {
+      ctx.save();
+      ctx.translate(centerX, groundY);
+
+      ctx.fillStyle = 'rgba(102, 217, 255, 0.14)';
+      ctx.fillRect(-95, -7, 190, 14);
+      ctx.strokeStyle = 'rgba(102, 217, 255, 0.74)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-100, 0);
+      ctx.lineTo(100, 0);
+      ctx.stroke();
+
+      ctx.fillStyle = '#1e2f45';
+      roundRect(ctx, -70, 4, 140, 16, 7);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 2;
+      for (let x = -55; x <= 55; x += 22) {
+        ctx.beginPath();
+        ctx.moveTo(x, 5);
+        ctx.lineTo(x - 16, 19);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(237,246,255,0.72)';
+      ctx.font = '800 13px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('PLATAFORMA', 0, 39);
+      ctx.restore();
+    }
+
+    function drawTrajectoryTrace(s, toY, centerX) {
+      if (!s.path.length) return;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(102, 217, 255, 0.35)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      s.path.forEach((p, i) => {
+        const y = toY(Math.max(0, p.h));
+        const x = centerX + Math.sin(p.t * 1.7) * 2;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawBaseReference(centerX, baseY) {
+      ctx.save();
+      ctx.globalAlpha = 0.8;
+      ctx.strokeStyle = 'rgba(248, 201, 106, 0.62)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX - 56, baseY);
+      ctx.lineTo(centerX + 56, baseY);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(248, 201, 106, 0.82)';
+      ctx.beginPath();
+      ctx.arc(centerX, baseY, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCapsule(x, y, s) {
+      y = clamp(y, 72, canvas.height - 128);
+      ctx.save();
+      ctx.translate(x, y);
+
+      const tilt = s.engineOn ? Math.sin(s.time * 12) * 0.03 : Math.sin(s.time * 2) * 0.015;
+      ctx.rotate(tilt);
+
+      if (s.engineOn) drawFlame(s);
+
+      // Patas
+      ctx.strokeStyle = 'rgba(210, 226, 244, 0.88)';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-25, 24); ctx.lineTo(-52, 50); ctx.lineTo(-66, 50);
+      ctx.moveTo(25, 24); ctx.lineTo(52, 50); ctx.lineTo(66, 50);
+      ctx.stroke();
+
+      // Cuerpo
+      const bodyGrad = ctx.createLinearGradient(0, -48, 0, 42);
+      bodyGrad.addColorStop(0, '#edf6ff');
+      bodyGrad.addColorStop(0.48, '#8eaccd');
+      bodyGrad.addColorStop(1, '#415b78');
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, -58);
+      ctx.bezierCurveTo(36, -36, 42, 8, 29, 35);
+      ctx.quadraticCurveTo(0, 50, -29, 35);
+      ctx.bezierCurveTo(-42, 8, -36, -36, 0, -58);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.38)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Ventana
+      ctx.fillStyle = '#07111f';
+      ctx.beginPath();
+      ctx.arc(0, -17, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(102,217,255,0.88)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(102,217,255,0.24)';
+      ctx.beginPath();
+      ctx.arc(-4, -21, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Motor
+      ctx.fillStyle = '#26364d';
+      roundRect(ctx, -18, 35, 36, 16, 6);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawFlame(s) {
+      const pct = state.thrustPct / 100;
+      const len = 38 + pct * 46 + Math.sin(s.time * 36) * 5;
+      const width = 16 + pct * 16;
+      const flame = ctx.createLinearGradient(0, 36, 0, 36 + len);
+      flame.addColorStop(0, 'rgba(255, 246, 180, 0.95)');
+      flame.addColorStop(0.35, 'rgba(255, 164, 70, 0.75)');
+      flame.addColorStop(1, 'rgba(255, 88, 58, 0.02)');
+
+      ctx.fillStyle = flame;
+      ctx.beginPath();
+      ctx.moveTo(-width / 2, 36);
+      ctx.quadraticCurveTo(0, 36 + len * 0.25, width / 2, 36);
+      ctx.quadraticCurveTo(width * 0.38, 36 + len * 0.62, 0, 36 + len);
+      ctx.quadraticCurveTo(-width * 0.38, 36 + len * 0.62, -width / 2, 36);
+      ctx.fill();
+    }
+
+    function drawResultGraphs() {
+      const r = state.round;
+      const s = state.sim;
+      if (!r || !s) return;
+
+      const w = resultCanvas.width;
+      const h = resultCanvas.height;
+      const c = resultCtx;
+
+      c.clearRect(0, 0, w, h);
+      const bg = c.createLinearGradient(0, 0, 0, h);
+      bg.addColorStop(0, 'rgba(7, 17, 31, 0.96)');
+      bg.addColorStop(1, 'rgba(4, 10, 19, 0.98)');
+      c.fillStyle = bg;
+      c.fillRect(0, 0, w, h);
+
+      c.save();
+      c.fillStyle = '#cfe5ff';
+      c.font = '900 17px system-ui';
+      c.textAlign = 'left';
+      c.textBaseline = 'alphabetic';
+      c.fillText('Respuesta observada', 28, 34);
+
+      const finalV = Math.max(0, s.velocity);
+      const fuelPct = clamp(100 * s.fuel / r.fuelFull, 0, 100);
+      c.fillStyle = 'rgba(237,246,255,0.70)';
+      c.font = '750 12px system-ui';
+      c.fillText(`Velocidad final: ${format(finalV, 2)} m/s · Límite seguro: ${format(r.safeV, 1)} m/s · Combustible restante: ${format(fuelPct, 0)}%`, 28, 56);
+
+      const marginX = 48;
+      const graphW = w - marginX * 2;
+      const graphH = 210;
+      const graphY1 = 94;
+      const graphY2 = 378;
+
+      drawHeightGraph(c, marginX, graphY1, graphW, graphH, s, r);
+      drawVelocityGraph(c, marginX, graphY2, graphW, graphH, s, r);
+
+      c.fillStyle = 'rgba(237,246,255,0.58)';
+      c.font = '700 11px system-ui';
+      c.textAlign = 'center';
+      c.fillText('tiempo', marginX + graphW / 2, graphY1 + graphH + 34);
+      c.fillText('tiempo', marginX + graphW / 2, graphY2 + graphH + 34);
+      c.restore();
+    }
+
+    function drawHeightGraph(c, plotX, plotY, plotW, plotH, s, r) {
+      drawGraphFrame(c, plotX, plotY, plotW, plotH, 'Altura de la cápsula', 'altura (m)');
+
+      if (s.path.length > 1) {
+        const tMax = Math.max(1, s.path[s.path.length - 1].t);
+        c.strokeStyle = 'rgba(102,217,255,0.9)';
+        c.lineWidth = 2.5;
+        c.beginPath();
+        s.path.forEach((p, i) => {
+          const px = plotX + (p.t / tMax) * plotW;
+          const py = plotY + plotH - clamp(p.h / (r.H0 * 1.05), 0, 1.08) * plotH;
+          if (i === 0) c.moveTo(px, py);
+          else c.lineTo(px, py);
+        });
+        c.stroke();
+      }
+
+      c.strokeStyle = 'rgba(248,201,106,0.72)';
+      c.setLineDash([6, 6]);
+      const ignitionY = plotY + plotH - clamp(state.ignitionHeight / (r.H0 * 1.05), 0, 1) * plotH;
+      c.beginPath();
+      c.moveTo(plotX, ignitionY);
+      c.lineTo(plotX + plotW, ignitionY);
+      c.stroke();
+      c.setLineDash([]);
+
+      c.fillStyle = 'rgba(248,201,106,0.82)';
+      c.font = '750 11px system-ui';
+      c.textAlign = 'right';
+      c.fillText('encendido', plotX + plotW - 5, ignitionY - 6);
+    }
+
+    function drawVelocityGraph(c, plotX, plotY, plotW, plotH, s, r) {
+      drawGraphFrame(c, plotX, plotY, plotW, plotH, 'Velocidad vertical', 'velocidad (m/s)');
+
+      if (s.velocityPath.length > 1) {
+        const tMax = Math.max(1, s.velocityPath[s.velocityPath.length - 1].t);
+        const minV = Math.min(-r.safeV * 1.4, ...s.velocityPath.map(p => p.v));
+        const maxV = Math.max(r.v0 * 1.12, r.safeV * 2.1, ...s.velocityPath.map(p => p.v));
+        const mapV = value => plotY + plotH - ((value - minV) / Math.max(0.1, maxV - minV)) * plotH;
+
+        const zeroY = mapV(0);
+        c.strokeStyle = 'rgba(255,255,255,0.13)';
+        c.lineWidth = 1;
+        c.beginPath();
+        c.moveTo(plotX, zeroY);
+        c.lineTo(plotX + plotW, zeroY);
+        c.stroke();
+
+        const safeY = mapV(r.safeV);
+        c.strokeStyle = 'rgba(80,242,154,0.72)';
+        c.setLineDash([6, 6]);
+        c.beginPath();
+        c.moveTo(plotX, safeY);
+        c.lineTo(plotX + plotW, safeY);
+        c.stroke();
+        c.setLineDash([]);
+
+        c.strokeStyle = 'rgba(248,201,106,0.95)';
+        c.lineWidth = 2.5;
+        c.beginPath();
+        s.velocityPath.forEach((p, i) => {
+          const px = plotX + (p.t / tMax) * plotW;
+          const py = mapV(p.v);
+          if (i === 0) c.moveTo(px, py);
+          else c.lineTo(px, py);
+        });
+        c.stroke();
+
+        c.fillStyle = 'rgba(80,242,154,0.82)';
+        c.font = '750 11px system-ui';
+        c.textAlign = 'right';
+        c.fillText('límite seguro', plotX + plotW - 5, safeY - 6);
+      }
+    }
+
+    function drawGraphFrame(c, plotX, plotY, plotW, plotH, title, yLabel) {
+      c.save();
+      c.fillStyle = 'rgba(255,255,255,0.025)';
+      c.fillRect(plotX, plotY, plotW, plotH);
+      c.strokeStyle = 'rgba(255,255,255,0.15)';
+      c.lineWidth = 1;
+      c.strokeRect(plotX, plotY, plotW, plotH);
+
+      c.strokeStyle = 'rgba(255,255,255,0.06)';
+      for (let i = 1; i < 4; i++) {
+        const y = plotY + (plotH * i) / 4;
+        c.beginPath();
+        c.moveTo(plotX, y);
+        c.lineTo(plotX + plotW, y);
+        c.stroke();
+      }
+
+      c.fillStyle = '#cfe5ff';
+      c.font = '850 13px system-ui';
+      c.textAlign = 'left';
+      c.fillText(title, plotX, plotY - 12);
+      c.fillStyle = 'rgba(237,246,255,0.62)';
+      c.font = '700 11px system-ui';
+      c.fillText(yLabel, plotX + 8, plotY + 17);
+      c.restore();
+    }
+
+    function drawParticles(toY, centerX) {
+      ctx.save();
+      for (const p of state.particles) {
+        const alpha = clamp(p.life / p.maxLife, 0, 1);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius * (1 + (1 - alpha) * 1.8), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function roundRect(context, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      context.beginPath();
+      context.moveTo(x + radius, y);
+      context.lineTo(x + w - radius, y);
+      context.quadraticCurveTo(x + w, y, x + w, y + radius);
+      context.lineTo(x + w, y + h - radius);
+      context.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      context.lineTo(x + radius, y + h);
+      context.quadraticCurveTo(x, y + h, x, y + h - radius);
+      context.lineTo(x, y + radius);
+      context.quadraticCurveTo(x, y, x + radius, y);
+      context.closePath();
+    }
+
+    function spawnSpark(height, amount) {
+      const baseY = mapHeightToCanvas(height);
+      const x = canvas.width * 0.53;
+      for (let i = 0; i < amount; i++) {
+        state.particles.push({
+          x: x + rand(-20, 20),
+          y: baseY + rand(-8, 18),
+          vx: rand(-35, 35),
+          vy: rand(20, 90),
+          radius: rand(1.5, 4),
+          life: rand(0.3, 0.8),
+          maxLife: 0.8,
+          color: Math.random() < 0.5 ? 'rgba(255,210,106,0.9)' : 'rgba(255,112,72,0.85)'
+        });
+      }
+    }
+
+    function spawnFlameParticle() {
+      const s = state.sim;
+      const baseY = mapHeightToCanvas(s.height);
+      const x = canvas.width * 0.53;
+      state.particles.push({
+        x: x + rand(-14, 14),
+        y: baseY + rand(6, 36),
+        vx: rand(-18, 18),
+        vy: rand(40, 115),
+        radius: rand(2, 5),
+        life: rand(0.25, 0.55),
+        maxLife: 0.55,
+        color: 'rgba(255,180,80,0.72)'
+      });
+    }
+
+    function spawnDust(amount) {
+      const x = canvas.width * 0.53;
+      const y = canvas.height - 78;
+      for (let i = 0; i < amount; i++) {
+        state.particles.push({
+          x: x + rand(-75, 75),
+          y: y + rand(-8, 10),
+          vx: rand(-140, 140),
+          vy: rand(-110, 10),
+          radius: rand(2, 8),
+          life: rand(0.5, 1.4),
+          maxLife: 1.4,
+          color: 'rgba(190,180,160,0.55)'
+        });
+      }
+    }
+
+    function mapHeightToCanvas(height) {
+      const r = state.round;
+      const groundY = canvas.height - 78;
+      const topY = 72;
+      const scale = (groundY - topY) / (r.H0 * 1.1);
+      return groundY - height * scale;
+    }
+
+    function updateParticles(dt) {
+      const groundY = canvas.height - 58;
+      for (const p of state.particles) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 80 * dt;
+        p.life -= dt;
+        if (p.y > groundY) {
+          p.y = groundY;
+          p.vy *= -0.18;
+          p.vx *= 0.72;
+        }
+      }
+      state.particles = state.particles.filter(p => p.life > 0);
+    }
+
+    function initAudio() {
+      if (!state.audio) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        state.audio = new AudioContext();
+      }
+      if (state.audio.state === 'suspended') state.audio.resume();
+    }
+
+    function beep(freq, duration, gainValue) {
+      if (!state.soundEnabled) return;
+      initAudio();
+      const osc = state.audio.createOscillator();
+      const gain = state.audio.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(gainValue, state.audio.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, state.audio.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(state.audio.destination);
+      osc.start();
+      osc.stop(state.audio.currentTime + duration);
+    }
+
+    function impactSound(finalVelocity = 0, type = 'crash') {
+      if (!state.soundEnabled) return;
+      initAudio();
+
+      const audio = state.audio;
+      const now = audio.currentTime;
+      const intensity = clamp(0.65 + finalVelocity / 14, 0.75, 1.45);
+
+      const master = audio.createGain();
+      master.gain.setValueAtTime(0.75, now);
+      master.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+      master.connect(audio.destination);
+
+      const length = Math.floor(audio.sampleRate * 0.46);
+      const buffer = audio.createBuffer(1, length, audio.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i++) {
+        const t = i / length;
+        const decay = Math.pow(1 - t, 2.4);
+        data[i] = (Math.random() * 2 - 1) * decay;
+      }
+
+      const noise = audio.createBufferSource();
+      noise.buffer = buffer;
+      const filter = audio.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(520, now);
+      filter.frequency.exponentialRampToValueAtTime(95, now + 0.44);
+      filter.Q.setValueAtTime(0.7, now);
+      const noiseGain = audio.createGain();
+      noiseGain.gain.setValueAtTime(0.22 * intensity, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.46);
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(master);
+      noise.start(now);
+      noise.stop(now + 0.48);
+
+      const thump = audio.createOscillator();
+      const thumpGain = audio.createGain();
+      thump.type = 'triangle';
+      thump.frequency.setValueAtTime(type === 'bounce' ? 82 : 105, now);
+      thump.frequency.exponentialRampToValueAtTime(34, now + 0.34);
+      thumpGain.gain.setValueAtTime(0.18 * intensity, now);
+      thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+      thump.connect(thumpGain);
+      thumpGain.connect(master);
+      thump.start(now);
+      thump.stop(now + 0.38);
+
+      const warning = audio.createOscillator();
+      const warningGain = audio.createGain();
+      warning.type = 'square';
+      warning.frequency.setValueAtTime(180, now + 0.08);
+      warning.frequency.exponentialRampToValueAtTime(95, now + 0.28);
+      warningGain.gain.setValueAtTime(0.0001, now);
+      warningGain.gain.setValueAtTime(0.055, now + 0.08);
+      warningGain.gain.exponentialRampToValueAtTime(0.001, now + 0.31);
+      warning.connect(warningGain);
+      warningGain.connect(master);
+      warning.start(now + 0.08);
+      warning.stop(now + 0.34);
+    }
+
+    function startMotorSound(pct) {
+      if (!state.soundEnabled) return;
+      initAudio();
+      if (!state.motorOsc) {
+        state.motorOsc = state.audio.createOscillator();
+        state.motorGain = state.audio.createGain();
+        state.motorOsc.type = 'sawtooth';
+        state.motorOsc.connect(state.motorGain);
+        state.motorGain.connect(state.audio.destination);
+        state.motorOsc.start();
+      }
+      state.motorOsc.frequency.setTargetAtTime(60 + pct * 80, state.audio.currentTime, 0.03);
+      state.motorGain.gain.setTargetAtTime(0.012 + pct * 0.025, state.audio.currentTime, 0.03);
+    }
+
+    function stopMotorSound() {
+      if (!state.motorOsc || !state.audio) return;
+      state.motorGain.gain.setTargetAtTime(0.0001, state.audio.currentTime, 0.02);
+      const osc = state.motorOsc;
+      setTimeout(() => {
+        try { osc.stop(); } catch (e) {}
+      }, 80);
+      state.motorOsc = null;
+      state.motorGain = null;
+    }
+
+    els.ignitionSlider.addEventListener('input', () => {
+      setActiveControl('height');
+      state.ignitionHeight = Number(els.ignitionSlider.value);
+      updateControls();
+    });
+
+    els.thrustSlider.addEventListener('input', () => {
+      els.thrustSlider.value = state.thrustPct;
+      updateControls();
+    });
+
+    els.heightControl.addEventListener('click', () => setActiveControl('height'));
+    els.thrustControl.addEventListener('click', () => setActiveControl('height'));
+
+    buttons.heightMinusBig.addEventListener('click', () => adjustControl('height', -5));
+    buttons.heightMinusSmall.addEventListener('click', () => adjustControl('height', -1));
+    buttons.heightPlusSmall.addEventListener('click', () => adjustControl('height', 1));
+    buttons.heightPlusBig.addEventListener('click', () => adjustControl('height', 5));
+    buttons.thrustMinusBig.addEventListener('click', () => updateControls());
+    buttons.thrustMinusSmall.addEventListener('click', () => updateControls());
+    buttons.thrustPlusSmall.addEventListener('click', () => updateControls());
+    buttons.thrustPlusBig.addEventListener('click', () => updateControls());
+
+    els.startBtn.addEventListener('click', startAttempt);
+    els.newBtn.addEventListener('click', newMission);
+    els.modalNew.addEventListener('click', newMission);
+
+    els.soundBtn.addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      if (state.soundEnabled) {
+        initAudio();
+        els.soundBtn.textContent = 'Sonido: encendido';
+        beep(660, 0.06, 0.04);
+      } else {
+        els.soundBtn.textContent = 'Sonido: apagado';
+        stopMotorSound();
+      }
+    });
+
+    let knobDrag = null;
+    els.thrustKnob.addEventListener('pointerdown', event => {
+      if (state.running) return;
+      setActiveControl('height');
+    });
+
+    els.thrustKnob.addEventListener('pointermove', event => {
+      // La perilla es sólo un indicador en el modo base.
+    });
+
+    els.thrustKnob.addEventListener('pointerup', event => {
+      knobDrag = null;
+    });
+
+    window.addEventListener('keydown', event => {
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === 'input') return;
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+
+      event.preventDefault();
+      if (event.key === 'ArrowLeft') adjustControl('height', -5);
+      if (event.key === 'ArrowRight') adjustControl('height', 5);
+      if (event.key === 'ArrowDown') adjustControl('height', -1);
+      if (event.key === 'ArrowUp') adjustControl('height', 1);
+    });
+
+    window.addEventListener('resize', draw);
+
+    newMission();
+  </script>
+</body>
+</html>
